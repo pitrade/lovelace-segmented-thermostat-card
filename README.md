@@ -2,7 +2,13 @@
 
 A Home Assistant Lovelace card for `climate` entities with a **segmented step slider**: one coloured segment per selectable temperature step. The target temperature is a thumb on its segment, the measured room temperature is a small thermometer icon on its segment. Inspired by [Better Thermostat UI Card](https://github.com/KartoffelToby/better-thermostat-ui-card).
 
-![Preview: default and compact layout](docs/preview.png)
+Default layout:
+
+![Default layout](docs/screenshot-default.png)
+
+Compact layout (`compact: true`):
+
+![Compact layout](docs/screenshot-compact.png)
 
 - Segmented blue-to-red slider, step size configurable (segment count follows `min_temp`, `max_temp`, `step_size`)
 - `compact: true`: one row with current temperature and window state | - target + | three preset buttons, plus the slider
