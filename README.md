@@ -37,6 +37,8 @@ entity: climate.living_room
 | `step_size` | `0.5` | Step between segments |
 | `window_sensor` | none | `binary_sensor` shown as open/closed window icon |
 | `compact` | `false` | One-row layout |
+| `show_current_temp` | `true` | Show the measured temperature (thermometer + value) |
+| `show_window` | `true` | Show the window sensor icon (needs `window_sensor`) |
 | `presets` | all offered | Filter and order the preset buttons: a list of preset names or objects (see below) |
 | `debounce` | `1000` | Milliseconds before the temperature is sent to Home Assistant |
 
@@ -58,6 +60,16 @@ presets:
   - mode: away
     name: Out
     icon: mdi:car
+```
+In `compact` mode the top row has three columns: left (temperature and window icon), middle (target temperature with -/+), right. Each preset can be placed with `column: left|right` (default `right`) and `align: left|right` (position within that column; default follows the column):
+```yaml
+presets:
+  - mode: eco
+    column: left
+    align: right
+  - mode: boost
+    column: right
+    align: left
 ```
 Known names (`eco`, `comfort`, `boost`, `away`, `home`, `sleep`, `activity`) get their own icon; anything else uses `mdi:tune-variant` unless you set `icon`. With many presets in `compact` mode, use `presets` to keep the row short.
 
