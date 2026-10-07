@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.1.0';
+const CARD_VERSION = '1.2.0';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -130,18 +130,37 @@ class SegmentedThermostatCard extends HTMLElement {
             <input type="range" id="slider" hidden min="${min}" max="${max}" step="${this.config.step_size}" value="${sliderVal}">
           </div>`;
     }
-    const headerRightHtml = `<div class="header-right">
-            ${this._renderWindowIcon()}
-            ${compact ? `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>` : `<div class="current-temp">${current_temperature || '—'}°C</div>`}
-          </div>`;
+    const showTemp = this.config.show_current_temp !== false;
+    const showWindow = this.config.show_window !== false;
+    const tempHtml = !showTemp ? '' : (compact
+      ? `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>`
+      : `<div class="current-temp">${current_temperature || '—'}°C</div>`);
+    const windowHtml = showWindow ? this._renderWindowIcon() : '';
+    const headerRightHtml = (windowHtml || tempHtml) ? `<div class="header-right">
+            ${windowHtml}
+            ${tempHtml}
+          </div>` : '';
     const presets = this._getPresets();
     this._presetSignature = JSON.stringify(presets);
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-    const modesHtml = presets.length === 0 ? '' : `<div class="modes">${presets.map(({ mode, name, icon }) => `
-            <button class="mode-btn ${mode === preset_mode ? 'active' : ''}" data-preset="${esc(mode)}"${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
+    const btnHtml = ({ mode, name, icon }, extra = '') => `
+            <button class="mode-btn ${mode === preset_mode ? 'active' : ''}${extra}" data-preset="${esc(mode)}"${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
               <ha-icon icon="${esc(icon)}"></ha-icon>
               <span>${esc(name)}</span>
-            </button>`).join('')}</div>`;
+            </button>`;
+    const modesHtml = presets.length === 0 ? '' : `<div class="modes">${presets.map((p) => btnHtml(p)).join('')}</div>`;
+    // compact: the outer columns hold the info group (left) and the presets, each preset placed by `column` / `align`
+    const colHtml = (side) => {
+      let pushed = false;
+      const items = [];
+      if (side === 'left' && headerRightHtml) items.push(headerRightHtml);
+      presets.filter((p) => p.column === side).forEach((p) => {
+        const push = p.align === 'right' && !pushed;
+        if (push) pushed = true;
+        items.push(btnHtml(p, push ? ' push' : ''));
+      });
+      return `<div class="col col-${side}">${items.join('')}</div>`;
+    };
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -359,7 +378,7 @@ class SegmentedThermostatCard extends HTMLElement {
 
         /* compact: no header; one row in 3 segments (temp + window | target control | presets as icons) + slider */
         ha-card.compact { padding: 8px; }
-        .compact .temp-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
+        .compact .temp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: 6px; }
         .compact .temp-mid { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
         .compact .header-right { justify-self: start; flex-direction: row-reverse; gap: 4px; padding-left: 4px; }
         .compact .temp-wrap { display: flex; align-items: center; }
@@ -386,7 +405,9 @@ class SegmentedThermostatCard extends HTMLElement {
         /* measured and target temperature on the same step: dark icon on the light thumb */
         .seg-therm.on-thumb { color: rgba(0, 0, 0, 0.7); filter: none; }
         @media (prefers-reduced-motion: reduce) { .seg-thumb { transition: none; } }
-        .compact .modes { justify-self: end; margin-right: 4px; }
+        .compact .col { display: flex; align-items: center; gap: 4px; min-width: 0; }
+        .compact .col-right { margin-right: 4px; }
+        .compact .col .push { margin-left: auto; }
         .compact .temp-control { margin-bottom: 0; padding: 0; background: none; border-radius: 0; }
         .compact .target-temp { font-size: 22px; min-width: 56px; white-space: nowrap; }
         .compact .btn { width: 32px; height: 32px; }
@@ -402,13 +423,13 @@ class SegmentedThermostatCard extends HTMLElement {
 `}
         <div class="temp-control">
           <div class="temp-row">
-            ${compact ? headerRightHtml : ''}
+            ${compact ? colHtml('left') : ''}
             <div class="temp-mid">
               <button class="btn" id="dec"><ha-icon icon="mdi:minus"></ha-icon></button>
               <div class="target-temp" id="target">${temperature || '—'}°C</div>
               <button class="btn" id="inc"><ha-icon icon="mdi:plus"></ha-icon></button>
             </div>
-            ${compact ? modesHtml : ''}
+            ${compact ? colHtml('right') : ''}
           </div>
           ${segHtml}
         </div>
@@ -744,11 +765,16 @@ class SegmentedThermostatCard extends HTMLElement {
     } else {
       list = offered.map((mode) => ({ mode }));
     }
-    return list.map((p) => ({
-      mode: p.mode,
-      name: p.name || this._presetName(p.mode),
-      icon: p.icon || PRESET_ICONS[p.mode] || PRESET_FALLBACK_ICON,
-    }));
+    return list.map((p) => {
+      const column = p.column === 'left' ? 'left' : 'right';
+      return {
+        mode: p.mode,
+        name: p.name || this._presetName(p.mode),
+        icon: p.icon || PRESET_ICONS[p.mode] || PRESET_FALLBACK_ICON,
+        column,
+        align: p.align === 'left' || p.align === 'right' ? p.align : column,
+      };
+    });
   }
 
   _presetName(mode) {
