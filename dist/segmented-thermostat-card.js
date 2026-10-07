@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.3.1';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -385,7 +385,7 @@ class SegmentedThermostatCard extends HTMLElement {
         ha-card.compact { padding: 8px; }
         .compact .temp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: 6px; }
         .compact .temp-mid { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
-        .compact .header-right { justify-self: start; flex-direction: row-reverse; gap: 4px; padding-left: 4px; }
+        .compact .header-right { justify-self: start; flex-direction: row-reverse; gap: 4px; }
         .compact .temp-wrap { display: flex; align-items: center; }
         .compact .current-temp { font-size: 16px; white-space: nowrap; }
         /* compact slider: one .seg per step; thumb and thermometer are children of a segment, so they
@@ -411,6 +411,7 @@ class SegmentedThermostatCard extends HTMLElement {
         .seg-therm.on-thumb { color: rgba(0, 0, 0, 0.7); filter: none; }
         @media (prefers-reduced-motion: reduce) { .seg-thumb { transition: none; } }
         .compact .col { display: flex; align-items: center; gap: 4px; min-width: 0; }
+        .compact .col-left { margin-left: 4px; }
         .compact .col-right { margin-right: 4px; }
         .compact .col .push { margin-left: auto; }
         .compact .temp-control { margin-bottom: 0; padding: 0; background: none; border-radius: 0; }
