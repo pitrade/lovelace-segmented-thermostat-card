@@ -3,13 +3,26 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.0.0';
+const CARD_VERSION = '1.1.0';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
   'color: white; background: #03a9f4; font-weight: 700;',
   'color: #03a9f4; background: white; font-weight: 700;'
 );
+
+// Icons for the preset names Home Assistant knows (https://developers.home-assistant.io/docs/core/entity/climate);
+// anything else falls back to a generic icon and can be overridden with the `presets` option.
+const PRESET_ICONS = {
+  eco: 'mdi:leaf',
+  comfort: 'mdi:sofa',
+  boost: 'mdi:fire',
+  away: 'mdi:home-export-outline',
+  home: 'mdi:home',
+  sleep: 'mdi:power-sleep',
+  activity: 'mdi:motion-sensor',
+};
+const PRESET_FALLBACK_ICON = 'mdi:tune-variant';
 
 class SegmentedThermostatCard extends HTMLElement {
   constructor() {
@@ -64,6 +77,8 @@ class SegmentedThermostatCard extends HTMLElement {
     // Only render if first time or if we need full re-render
     if (!oldEntity) {
       this._render();
+    } else if (JSON.stringify(this._getPresets()) !== this._presetSignature) {
+      this._render(); // the entity now offers different presets
     } else {
       // Just update the values, don't re-render everything
       this._updateValues();
@@ -119,10 +134,13 @@ class SegmentedThermostatCard extends HTMLElement {
             ${this._renderWindowIcon()}
             ${compact ? `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>` : `<div class="current-temp">${current_temperature || '—'}°C</div>`}
           </div>`;
-    const modesHtml = `<div class="modes">${['eco', 'comfort', 'boost'].map(preset => `
-            <button class="mode-btn ${preset === preset_mode ? 'active' : ''}" data-preset="${preset}"${compact ? ` title="${this._getPresetLabel(preset)}" aria-label="${this._getPresetLabel(preset)}"` : ''}>
-              ${this._getPresetIcon(preset)}
-              <span>${this._getPresetLabel(preset)}</span>
+    const presets = this._getPresets();
+    this._presetSignature = JSON.stringify(presets);
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const modesHtml = presets.length === 0 ? '' : `<div class="modes">${presets.map(({ mode, name, icon }) => `
+            <button class="mode-btn ${mode === preset_mode ? 'active' : ''}" data-preset="${esc(mode)}"${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
+              <ha-icon icon="${esc(icon)}"></ha-icon>
+              <span>${esc(name)}</span>
             </button>`).join('')}</div>`;
 
     this.shadowRoot.innerHTML = `
@@ -672,12 +690,15 @@ class SegmentedThermostatCard extends HTMLElement {
     this.shadowRoot.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const clickedPreset = btn.dataset.preset;
-        const currentPreset = this.entity.attributes.preset_mode;
+        const attrs = this.entity.attributes;
+        const currentPreset = this._optimisticPreset !== null ? this._optimisticPreset : attrs.preset_mode;
 
-        // Toggle boost off if already active
-        const targetPreset = (clickedPreset === 'boost' && currentPreset === 'boost')
-          ? 'comfort'
-          : clickedPreset;
+        // Tapping the active preset again resets it, if the entity offers 'none'
+        let targetPreset = clickedPreset;
+        if (clickedPreset === currentPreset) {
+          if ((attrs.preset_modes || []).includes('none')) targetPreset = 'none';
+          else return;
+        }
 
         // Set optimistic preset for immediate UI feedback
         this._optimisticPreset = targetPreset;
@@ -710,22 +731,34 @@ class SegmentedThermostatCard extends HTMLElement {
     }, this.config.debounce);
   }
 
-  _getPresetIcon(preset) {
-    const icons = {
-      eco: 'mdi:leaf',
-      comfort: 'mdi:sofa',
-      boost: 'mdi:fire',
-    };
-    return `<ha-icon icon="${icons[preset] || 'mdi:help-circle'}"></ha-icon>`;
+  // Presets come from the entity (`preset_modes`, without 'none'). `presets` (optional) filters and orders them:
+  // a list of mode names or objects { mode, name, icon }. Configured modes the entity does not offer are hidden.
+  _getPresets() {
+    const attrs = (this.entity && this.entity.attributes) || {};
+    const offered = (attrs.preset_modes || []).filter((m) => m !== 'none');
+    let list;
+    if (Array.isArray(this.config.presets)) {
+      list = this.config.presets
+        .map((p) => (typeof p === 'string' ? { mode: p } : p))
+        .filter((p) => p && p.mode && offered.includes(p.mode));
+    } else {
+      list = offered.map((mode) => ({ mode }));
+    }
+    return list.map((p) => ({
+      mode: p.mode,
+      name: p.name || this._presetName(p.mode),
+      icon: p.icon || PRESET_ICONS[p.mode] || PRESET_FALLBACK_ICON,
+    }));
   }
 
-  _getPresetLabel(preset) {
-    const labels = {
-      eco: 'Eco',
-      comfort: 'Comfort',
-      boost: 'Boost',
-    };
-    return labels[preset] || preset;
+  _presetName(mode) {
+    try {
+      const v = this._hass && this._hass.formatEntityAttributeValue
+        ? this._hass.formatEntityAttributeValue(this.entity, 'preset_mode', mode)
+        : null;
+      if (v) return String(v);
+    } catch (e) { /* fall through to the raw name */ }
+    return mode.charAt(0).toUpperCase() + mode.slice(1).replace(/_/g, ' ');
   }
 
   _renderWindowIcon() {

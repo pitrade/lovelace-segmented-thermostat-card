@@ -12,7 +12,7 @@ Compact layout (`compact: true`):
 
 - Segmented blue-to-red slider, step size configurable (segment count follows `min_temp`, `max_temp`, `step_size`)
 - `compact: true`: one row with current temperature and window state | - target + | three preset buttons, plus the slider
-- Preset buttons: `eco`, `comfort`, `boost` (tapping `boost` while active switches back to `comfort`)
+- Preset buttons built from the entity's own `preset_modes` (localised names, icon per preset, generic fallback icon); hidden if the entity offers none. Tapping the active preset resets it to `none` if the entity offers that
 - Optional window sensor icon
 - Drag / tap on the slider, arrow keys, Home/End, PageUp/PageDown, +/- buttons; debounced service calls; ARIA slider
 
@@ -37,6 +37,7 @@ entity: climate.living_room
 | `step_size` | `0.5` | Step between segments |
 | `window_sensor` | none | `binary_sensor` shown as open/closed window icon |
 | `compact` | `false` | One-row layout |
+| `presets` | all offered | Filter and order the preset buttons: a list of preset names or objects (see below) |
 | `debounce` | `1000` | Milliseconds before the temperature is sent to Home Assistant |
 
 Compact example:
@@ -49,8 +50,19 @@ max_temp: 24
 compact: true
 ```
 
+### Presets
+By default one button per entry in the entity's `preset_modes` (except `none`) is shown. Use `presets` to pick, order or restyle them; presets the entity does not offer are ignored:
+```yaml
+presets:
+  - eco
+  - mode: away
+    name: Out
+    icon: mdi:car
+```
+Known names (`eco`, `comfort`, `boost`, `away`, `home`, `sleep`, `activity`) get their own icon; anything else uses `mdi:tune-variant` unless you set `icon`. With many presets in `compact` mode, use `presets` to keep the row short.
+
 ## Requirements
-- The climate entity must support `climate.set_temperature`; the preset buttons call `climate.set_preset_mode` with `eco`, `comfort` or `boost`, so the entity should offer those presets (otherwise the buttons do nothing useful).
+- The climate entity must support `climate.set_temperature`. Preset buttons only appear if the entity offers `preset_modes`; they call `climate.set_preset_mode`.
 - Tested in a mock harness in Chromium, Firefox and WebKit, and on a real Home Assistant 2026.9 dashboard in Chromium. Not tested on real phones or tablets.
 
 ## License
