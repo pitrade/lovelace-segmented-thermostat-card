@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.3.3';
+const CARD_VERSION = '1.3.4';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -118,9 +118,7 @@ class SegmentedThermostatCard extends HTMLElement {
     }
     const showTemp = this.config.show_current_temp !== false;
     const showWindow = this.config.show_window !== false;
-    const tempHtml = !showTemp ? '' : (compact
-      ? `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>`
-      : `<div class="current-temp">${current_temperature || '—'}°C</div>`);
+    const tempHtml = !showTemp ? '' : `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>`;
     const windowHtml = showWindow ? this._renderWindowIcon() : '';
     const headerRightHtml = (windowHtml || tempHtml) ? `<div class="header-right">
             ${windowHtml}
@@ -154,8 +152,9 @@ class SegmentedThermostatCard extends HTMLElement {
         ha-card { padding: 12px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .name { font-size: 20px; font-weight: 500; }
-        .header-right { display: flex; gap: 12px; align-items: center; }
-        .current-temp { font-size: 14px; font-weight: 500; }
+        .header-right { display: flex; flex-direction: row-reverse; gap: 4px; align-items: center; }
+        .temp-wrap { display: flex; align-items: center; }
+        .current-temp { font-size: 16px; font-weight: 500; white-space: nowrap; }
 
         .temp-control { background: var(--secondary-background-color); border-radius: 12px; padding: 6px; margin-bottom: 12px; }
 
@@ -214,9 +213,7 @@ class SegmentedThermostatCard extends HTMLElement {
         ha-card.compact { padding: 8px; }
         .compact .temp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: 6px; }
         .compact .temp-mid { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
-        .compact .header-right { justify-self: start; flex-direction: row-reverse; gap: 4px; }
-        .compact .temp-wrap { display: flex; align-items: center; }
-        .compact .current-temp { font-size: 16px; white-space: nowrap; }
+        .compact .header-right { justify-self: start; }
         /* compact slider: one .seg per step; thumb and thermometer are children of a segment, so they
            are centred on it by layout alone. The track is 48px tall (touch target), segments 32px. */
         .seg-track { display: flex; gap: 2px; height: 48px; padding: 8px 0 8px; margin: 0 4px; direction: ltr; isolation: isolate;
