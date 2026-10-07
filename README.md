@@ -71,6 +71,18 @@ presets:
     column: right
     align: left
 ```
+Colours: give a preset `color_temperature: 17` to colour its button like the slider segment of that temperature (this only colours the button, it does not set any temperature on the thermostat), or `color: "#ff5722"` for an explicit CSS colour (`color` wins). Without either the button stays neutral:
+```yaml
+presets:
+  - mode: eco
+    column: left
+    color_temperature: 17
+  - mode: comfort
+    column: right
+    color_temperature: 21
+  - mode: boost
+    color: "#ff5722"
+```
 Known names (`eco`, `comfort`, `boost`, `away`, `home`, `sleep`, `activity`) get their own icon; anything else uses `mdi:tune-variant` unless you set `icon`. With many presets in `compact` mode, use `presets` to keep the row short.
 
 ## Requirements
