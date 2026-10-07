@@ -19,8 +19,9 @@ entity: climate.living_room
 | `entity` | required | `climate.*` entity |
 | `name` | entity name | Title (default layout) |
 | `min_temp`, `max_temp`, `step_size` | 12, 24, 0.5 | Slider range and step |
-| `window_sensor` | – | `binary_sensor` shown as window icon |
-| `show_current_temp`, `show_window` | `true` | Hide the measured temperature / window icon |
+| `window_sensor` | – | Optional `binary_sensor`; without it there is no window icon |
+| `show_current_temp` | `true` | Measured temperature (taken from the climate entity, no sensor needed) |
+| `show_window` | `true` | Window icon (only shown if `window_sensor` is set) |
 | `compact` | `false` | One-row layout without title |
 | `presets` | all the entity offers | Pick, order and style the preset buttons (below) |
 
