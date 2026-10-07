@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.3.1';
+const CARD_VERSION = '1.3.2';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -356,6 +356,7 @@ class SegmentedThermostatCard extends HTMLElement {
           border: 1px solid var(--divider-color);
           border-radius: 8px;
           background: var(--card-background-color);
+          color: var(--primary-text-color);
           cursor: pointer;
           display: flex;
           flex-direction: column;
