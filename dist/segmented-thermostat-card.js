@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.3.2';
+const CARD_VERSION = '1.3.3';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -97,22 +97,6 @@ class SegmentedThermostatCard extends HTMLElement {
       friendly_name = 'Thermostat'
     } = this.entity.attributes;
 
-    // One equal segment per selectable step; draw a 2px divider centred on each
-    // internal boundary (i/numSegments of the track). Explicit stops = exact and
-    // drift-free, so the segments line up perfectly with the thermometer icon.
-    const numSegments = Math.round((this.config.max_temp - this.config.min_temp) / this.config.step_size) + 1;
-    const dividerStops = [];
-    for (let i = 1; i < numSegments; i++) {
-      const p = (100 * i / numSegments).toFixed(4);
-      dividerStops.push(
-        `transparent calc(${p}% - 1px)`,
-        `var(--secondary-background-color) calc(${p}% - 1px)`,
-        `var(--secondary-background-color) calc(${p}% + 1px)`,
-        `transparent calc(${p}% + 1px)`
-      );
-    }
-    const dividerGradient = `linear-gradient(to right, transparent 0, ${dividerStops.join(', ')}, transparent 100%)`;
-
     const compact = this.config.compact === true;
     // compact slider: one element per selectable step; thumb and thermometer are children of a
     // segment, so their alignment comes from layout alone (no calc()/rounding drift)
@@ -180,57 +164,6 @@ class SegmentedThermostatCard extends HTMLElement {
         .target-temp { text-align: center; font-size: 32px; font-weight: 500; min-width: 120px; transition: color 0.2s, opacity 0.2s; }
         .target-temp.updating { color: var(--secondary-text-color); opacity: 0.5; }
 
-        .slider-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .slider-track-bg {
-          position: absolute;
-          left: 4px;
-          right: 4px;
-          top: 50%;
-          transform: translateY(-50%);
-          height: 32px;
-          background:
-            linear-gradient(90deg,
-              rgba(74, 144, 226, 0.85) 0%,
-              rgba(91, 163, 245, 0.85) 15%,
-              rgba(124, 184, 255, 0.85) 30%,
-              rgba(165, 172, 176, 0.85) 50%,
-              rgba(203, 159, 116, 0.85) 70%,
-              rgba(219, 110, 91, 0.85) 85%,
-              rgba(220, 107, 107, 0.85) 100%
-            );
-          border-radius: 2px;
-          box-shadow:
-            inset 0 2px 3px rgba(0, 0, 0, 0.3),
-            0 1px 1px rgba(255, 255, 255, 0.1);
-          pointer-events: none;
-          z-index: 0;
-          overflow: hidden;
-        }
-        .current-temp-indicator {
-          position: absolute;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 2;
-          pointer-events: none;
-          color: var(--secondary-background-color);
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-          transition: left 0.3s ease;
-        }
-        .current-temp-indicator ha-icon {
-          --mdc-icon-size: 16px;
-        }
-        .slider-track-bg::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: ${dividerGradient};
-          pointer-events: none;
-        }
         .btn {
           width: 40px;
           height: 40px;
@@ -243,111 +176,9 @@ class SegmentedThermostatCard extends HTMLElement {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          transition: all 0.2s;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
         }
         .btn:hover {
           background: var(--secondary-background-color);
-        }
-        .btn:active {
-          transform: scale(0.95);
-        }
-        .btn.active {
-          background: var(--primary-color);
-          color: white;
-          border-color: var(--primary-color);
-        }
-
-        input[type="range"] {
-          position: relative;
-          width: 100%;
-          height: 48px;
-          margin: 0;
-          padding: 0;
-          -webkit-appearance: none;
-          background: transparent;
-          cursor: pointer;
-          touch-action: none;
-          z-index: 1;
-        }
-        input[type="range"]:focus {
-          outline: none;
-        }
-
-        /* Webkit Track */
-        input[type="range"]::-webkit-slider-track {
-          width: 100%;
-          height: 32px;
-          border-radius: 2px;
-          background: transparent;
-        }
-
-        /* Webkit Thumb */
-        input[type="range"]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 20px;
-          height: 40px;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-          border: 2px solid rgba(255,255,255,0.9);
-          border-radius: 2px;
-          cursor: grab;
-          margin-top: 0;
-          box-shadow:
-            0 2px 8px rgba(0,0,0,0.3),
-            inset 0 1px 2px rgba(255,255,255,0.6),
-            inset 0 -1px 1px rgba(0,0,0,0.15);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-          transform: scale(1.1);
-          box-shadow:
-            0 3px 12px rgba(0,0,0,0.4),
-            inset 0 1px 2px rgba(255,255,255,0.7);
-        }
-        input[type="range"]::-webkit-slider-thumb:active {
-          cursor: grabbing;
-          transform: scale(1.05);
-          box-shadow:
-            0 1px 4px rgba(0,0,0,0.4),
-            inset 0 1px 2px rgba(255,255,255,0.5);
-        }
-
-        /* Firefox Track */
-        input[type="range"]::-moz-range-track {
-          width: 100%;
-          height: 32px;
-          border-radius: 2px;
-          background: transparent;
-          border: none;
-        }
-
-        /* Firefox Thumb */
-        input[type="range"]::-moz-range-thumb {
-          width: 20px;
-          height: 40px;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-          border: 2px solid rgba(255,255,255,0.9);
-          border-radius: 2px;
-          cursor: grab;
-          box-shadow:
-            0 2px 8px rgba(0,0,0,0.3),
-            inset 0 1px 2px rgba(255,255,255,0.6),
-            inset 0 -1px 1px rgba(0,0,0,0.15);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        input[type="range"]::-moz-range-thumb:hover {
-          transform: scale(1.1);
-          box-shadow:
-            0 3px 12px rgba(0,0,0,0.4),
-            inset 0 1px 2px rgba(255,255,255,0.7);
-        }
-        input[type="range"]::-moz-range-thumb:active {
-          cursor: grabbing;
-          transform: scale(1.05);
-          box-shadow:
-            0 1px 4px rgba(0,0,0,0.4),
-            inset 0 1px 2px rgba(255,255,255,0.5);
         }
 
         .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; }
@@ -362,9 +193,6 @@ class SegmentedThermostatCard extends HTMLElement {
           flex-direction: column;
           align-items: center;
           gap: 2px;
-          transition: all 0.2s;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
         }
         .mode-btn:hover {
           background: var(--secondary-background-color);
@@ -374,7 +202,7 @@ class SegmentedThermostatCard extends HTMLElement {
         .mode-btn[style*="--preset-color"].active ha-icon { color: #fff; }
         .mode-btn.active {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color);
           border-color: var(--primary-color);
         }
         .mode-btn.updating {
@@ -391,9 +219,8 @@ class SegmentedThermostatCard extends HTMLElement {
         .compact .current-temp { font-size: 16px; white-space: nowrap; }
         /* compact slider: one .seg per step; thumb and thermometer are children of a segment, so they
            are centred on it by layout alone. The track is 48px tall (touch target), segments 32px. */
-        .slider-wrapper:has(.seg-track) { display: block; }
         .seg-track { display: flex; gap: 2px; height: 48px; padding: 8px 0 8px; margin: 0 4px; direction: ltr; isolation: isolate;
-          cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+          cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
         .seg-track:focus { outline: none; }
         .seg-track:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 0; border-radius: 4px; }
         .seg { position: relative; flex: 1 1 0; min-width: 0; border-radius: 1px; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
@@ -446,7 +273,6 @@ class SegmentedThermostatCard extends HTMLElement {
     `;
 
     this._attach();
-    this._updateTempIndicator();
     this._updateSegs();
   }
 
@@ -487,33 +313,6 @@ class SegmentedThermostatCard extends HTMLElement {
       if (icon.parentNode !== indSeg) indSeg.appendChild(icon);
       icon.classList.toggle('on-thumb', indSeg === thumbSeg);
     }
-  }
-
-  _updateTempIndicator() {
-    const { current_temperature } = this.entity.attributes;
-    const indicator = this.shadowRoot.getElementById('temp-indicator');
-
-    if (!indicator || current_temperature === undefined || current_temperature === null) {
-      if (indicator) indicator.style.display = 'none';
-      return;
-    }
-
-    // Snap the measured temperature to the nearest selectable step, then clamp
-    const step = this.config.step_size;
-    const roundedTemp = Math.round(current_temperature / step) * step;
-    const clampedTemp = Math.max(this.config.min_temp, Math.min(this.config.max_temp, roundedTemp));
-
-    // The track (see .slider-track-bg: left/right 4px) is split into one equal
-    // segment per selectable step. Center the icon in the segment for this temp.
-    // Pure calc() keeps it pixel-exact and responsive on any width — no offsetWidth,
-    // no resize handling: 100% = wrapper width, (100% - 8px) = track width.
-    const inset = 4; // matches .slider-track-bg left/right
-    const numSegments = Math.round((this.config.max_temp - this.config.min_temp) / step) + 1;
-    const segmentIndex = Math.round((clampedTemp - this.config.min_temp) / step);
-    const factor = segmentIndex + 0.5; // center of that segment
-
-    indicator.style.display = 'block';
-    indicator.style.left = `calc(${inset}px + ${factor} * (100% - ${inset * 2}px) / ${numSegments})`;
   }
 
   _updateValues() {
@@ -587,7 +386,6 @@ class SegmentedThermostatCard extends HTMLElement {
     });
 
     // Update thermometer indicator position
-    this._updateTempIndicator();
     this._updateSegs();
   }
 
