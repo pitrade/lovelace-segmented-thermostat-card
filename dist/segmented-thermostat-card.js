@@ -3,7 +3,7 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.2.0';
+const CARD_VERSION = '1.3.0';
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -23,6 +23,8 @@ const PRESET_ICONS = {
   activity: 'mdi:motion-sensor',
 };
 const PRESET_FALLBACK_ICON = 'mdi:tune-variant';
+// colour stops of the slider (position in %, rgb); a preset's `color_temperature` is coloured like its segment
+const SLIDER_STOPS = [[0, [74, 144, 226]], [15, [91, 163, 245]], [30, [124, 184, 255]], [50, [165, 172, 176]], [70, [203, 159, 116]], [85, [219, 110, 91]], [100, [220, 107, 107]]];
 
 class SegmentedThermostatCard extends HTMLElement {
   constructor() {
@@ -143,8 +145,8 @@ class SegmentedThermostatCard extends HTMLElement {
     const presets = this._getPresets();
     this._presetSignature = JSON.stringify(presets);
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-    const btnHtml = ({ mode, name, icon }, extra = '') => `
-            <button class="mode-btn ${mode === preset_mode ? 'active' : ''}${extra}" data-preset="${esc(mode)}"${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
+    const btnHtml = ({ mode, name, icon, color }, extra = '') => `
+            <button class="mode-btn ${mode === preset_mode ? 'active' : ''}${extra}" data-preset="${esc(mode)}"${color ? ` style="--preset-color: ${esc(color)}"` : ''}${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
               <ha-icon icon="${esc(icon)}"></ha-icon>
               <span>${esc(name)}</span>
             </button>`;
@@ -366,6 +368,9 @@ class SegmentedThermostatCard extends HTMLElement {
         .mode-btn:hover {
           background: var(--secondary-background-color);
         }
+        .mode-btn[style*="--preset-color"] ha-icon { color: var(--preset-color); }
+        .mode-btn[style*="--preset-color"].active { background: var(--preset-color); border-color: var(--preset-color); }
+        .mode-btn[style*="--preset-color"].active ha-icon { color: #fff; }
         .mode-btn.active {
           background: var(--primary-color);
           color: white;
@@ -773,8 +778,24 @@ class SegmentedThermostatCard extends HTMLElement {
         icon: p.icon || PRESET_ICONS[p.mode] || PRESET_FALLBACK_ICON,
         column,
         align: p.align === 'left' || p.align === 'right' ? p.align : column,
+        color: p.color || (p.color_temperature !== undefined && p.color_temperature !== null && p.color_temperature !== ''
+          ? this._segmentColor(Number(p.color_temperature)) : null),
       };
     });
+  }
+
+  // colour of the slider segment for a temperature (centre of its segment on the gradient)
+  _segmentColor(temp) {
+    if (!Number.isFinite(temp)) return null;
+    const { min, step, n } = this._grid();
+    const i = Math.min(n - 1, Math.max(0, Math.round((temp - min) / step)));
+    const pos = ((i + 0.5) / n) * 100;
+    let k = 1;
+    while (k < SLIDER_STOPS.length - 1 && SLIDER_STOPS[k][0] < pos) k++;
+    const [p0, c0] = SLIDER_STOPS[k - 1];
+    const [p1, c1] = SLIDER_STOPS[k];
+    const f = Math.min(1, Math.max(0, (pos - p0) / (p1 - p0)));
+    return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * f)).join(',')})`;
   }
 
   _presetName(mode) {
