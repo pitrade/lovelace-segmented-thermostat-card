@@ -3,7 +3,15 @@
  * Copyright (C) 2026 Marc Hinterthaner
  * License: GPL-3.0-or-later (see LICENSE)
  */
-const CARD_VERSION = '1.3.4';
+const CARD_VERSION = '1.3.5';
+
+// Escape text before it goes into an innerHTML template (entity names and states are not trusted).
+const esc = (t) => String(t)
+  .replace(/&/g, '&amp;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;');
 
 console.info(
   `%c SEGMENTED-THERMOSTAT %c v${CARD_VERSION} `,
@@ -112,13 +120,13 @@ class SegmentedThermostatCard extends HTMLElement {
         segs += `<div class="seg" style="background-size: ${n * 100}% 100%; background-position: ${pos}% 0;">${i === 0 ? '<span class="seg-thumb" id="seg-thumb" aria-hidden="true"></span><ha-icon class="seg-therm" id="seg-therm" icon="mdi:thermometer" aria-hidden="true"></ha-icon>' : ''}</div>`;
       }
       segHtml = `<div class="slider-wrapper">
-            <div class="seg-track" id="seg-track" role="slider" tabindex="0" aria-label="${String(this.config.name || friendly_name).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${sliderVal}">${segs}</div>
+            <div class="seg-track" id="seg-track" role="slider" tabindex="0" aria-label="${esc(this.config.name || friendly_name)}" aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${sliderVal}">${segs}</div>
             <input type="range" id="slider" hidden min="${min}" max="${max}" step="${this.config.step_size}" value="${sliderVal}">
           </div>`;
     }
     const showTemp = this.config.show_current_temp !== false;
     const showWindow = this.config.show_window !== false;
-    const tempHtml = !showTemp ? '' : `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${current_temperature || '—'}°C</div></div>`;
+    const tempHtml = !showTemp ? '' : `<div class="temp-wrap"><ha-icon class="temp-ico" icon="mdi:thermometer"></ha-icon><div class="current-temp">${esc(current_temperature || '—')}°C</div></div>`;
     const windowHtml = showWindow ? this._renderWindowIcon() : '';
     const headerRightHtml = (windowHtml || tempHtml) ? `<div class="header-right">
             ${windowHtml}
@@ -126,7 +134,6 @@ class SegmentedThermostatCard extends HTMLElement {
           </div>` : '';
     const presets = this._getPresets();
     this._presetSignature = JSON.stringify(presets);
-    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     const btnHtml = ({ mode, name, icon, color }, extra = '') => `
             <button class="mode-btn ${mode === preset_mode ? 'active' : ''}${extra}" data-preset="${esc(mode)}"${color ? ` style="--preset-color: ${esc(color)}"` : ''}${compact ? ` title="${esc(name)}" aria-label="${esc(name)}"` : ''}>
               <ha-icon icon="${esc(icon)}"></ha-icon>
@@ -248,7 +255,7 @@ class SegmentedThermostatCard extends HTMLElement {
       </style>
       <ha-card class="${compact ? 'compact' : ''}">
         ${compact ? '' : `<div class="header">
-          <div class="name">${this.config.name || friendly_name}</div>
+          <div class="name">${esc(this.config.name || friendly_name)}</div>
           ${headerRightHtml}
         </div>
 `}
@@ -257,7 +264,7 @@ class SegmentedThermostatCard extends HTMLElement {
             ${compact ? colHtml('left') : ''}
             <div class="temp-mid">
               <button class="btn" id="dec"><ha-icon icon="mdi:minus"></ha-icon></button>
-              <div class="target-temp" id="target">${temperature || '—'}°C</div>
+              <div class="target-temp" id="target">${esc(temperature || '—')}°C</div>
               <button class="btn" id="inc"><ha-icon icon="mdi:plus"></ha-icon></button>
             </div>
             ${compact ? colHtml('right') : ''}
