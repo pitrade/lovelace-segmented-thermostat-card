@@ -37,7 +37,26 @@ presets:
   - mode: boost
     color: "#ff5722"        # or any CSS colour
 ```
-Other keys per preset: `name`, `icon`. In `compact` mode the top row has three columns (info | target | right); place a preset with `column: left|right` and `align: left|right`.
+Other keys per preset: `name`, `icon`.
+
+### Placing presets in compact mode
+The top row has three columns: info (left), target (middle), right. Each preset sets its `column` (`left` or `right`) and `align` (`left` or `right`, its position inside that column). This puts eco on the left and boost and comfort on the right:
+
+```yaml
+type: custom:segmented-thermostat-card
+entity: climate.office
+compact: true
+presets:
+  - mode: eco
+    column: left
+    align: left
+  - mode: boost
+    column: right
+    align: left
+  - mode: comfort
+    column: right
+    align: right
+```
 
 ## Notes
 Needs a `climate` entity that supports `climate.set_temperature`; preset buttons only appear if it offers `preset_modes`. Tested in a mock harness (Chromium, Firefox, WebKit) and on Home Assistant 2026.9 in Chromium; not on real phones or tablets.
